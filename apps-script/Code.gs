@@ -496,3 +496,35 @@ function json_(payload) {
     .createTextOutput(JSON.stringify(payload))
     .setMimeType(ContentService.MimeType.JSON);
 }
+
+/**
+ * Apps Script 편집기 내에서 배포 전 회원가입 및 로그인이 정상 작동하는지 테스트하는 함수
+ * 상단 함수 목록에서 'testSignupAndLogin'을 선택하고 [▶ 실행]을 누르면 동작을 테스트할 수 있습니다.
+ */
+function testSignupAndLogin() {
+  setupAuth();
+
+  const rand = Math.floor(Math.random() * 1000);
+  const testEmail = 'test_' + rand + '@example.com';
+  const testPassword = 'Password123!';
+
+  Logger.log('=== 1. 회원가입 테스트 시작: ' + testEmail + ' ===');
+  const signupRes = signup_({
+    email: testEmail,
+    name: '테스터',
+    nickname: 'tester' + rand,
+    password: testPassword
+  });
+  Logger.log('회원가입 응답: ' + signupRes.getContent());
+
+  Logger.log('=== 2. 로그인 테스트 시작 ===');
+  const loginRes = login_({
+    email: testEmail,
+    password: testPassword
+  });
+  Logger.log('로그인 응답: ' + loginRes.getContent());
+
+  Logger.log('=== 3. 테스트 완료: 스프레드시트의 Users, Sessions 탭을 확인해 보세요! ===');
+  return '테스트 완료! 스프레드시트에 테스트 데이터가 추가되었습니다.';
+}
+
