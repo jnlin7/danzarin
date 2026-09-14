@@ -1,88 +1,61 @@
-# Google Apps Script 인증 API 설정
+# Google Apps Script 인증 및 데이터베이스 API 설정
 
-## 1. 코드 설치
+사용자 지정 구글 스프레드시트:
+`https://docs.google.com/spreadsheets/d/1pZcM4KC0lTnlhhmrSwiTxszZ5TXwHJVBIYzypDWupZE/edit`
 
-Google Apps Script 프로젝트의 `Code.gs` 내용을 이 폴더의 `Code.gs`로 교체한다.
+---
 
-## 2. 최초 설정
+## 1. Apps Script에 코드 설치하기
 
-Apps Script 상단 함수 목록에서 `setupAuth`를 선택해 한 번 실행하고 Google 권한을 승인한다. 실행하지 않은 경우에도 첫 인증 요청에서 필요한 시트와 설정을 자동 생성한다.
+1. 위의 스프레드시트 링크를 브라우저에서 엽니다.
+2. 상단 메뉴에서 **확장 프로그램 → Apps Script**를 클릭합니다.
+3. 기본 `Code.gs` 편집기에 이 폴더의 `Code.gs` 전체 코드를 복사하여 덮어씁니다.
+4. 상단 디스크 아이콘(💾 저장)을 누릅니다.
 
-설정이 끝나면 연결된 스프레드시트에 다음 시트가 생성된다.
+---
 
-- `Users`: 회원 정보와 암호화된 비밀번호
-- `Sessions`: 로그인 세션 토큰의 해시와 만료 시각
+## 2. 최초 시트 초기화 (setupAuth)
 
-## 3. 웹 앱 배포
+1. Apps Script 상단 함수 목록 드롭다운에서 `setupAuth`를 선택합니다.
+2. **실행** 버튼(▶)을 누릅니다.
+3. "권한 승인 필요" 안내창이 나타나면:
+   - **권한 검토** 클릭
+   - 본인 Google 계정 선택
+   - "고급" 클릭 → "안전하지 않은 페이지로 이동" 클릭
+   - **허용** 버튼 클릭
+4. 실행 완료 시 스프레드시트에 다음 시트가 자동으로 생성되고 헤더 서식이 적용됩니다:
+   - `Users`: 회원 ID, 이메일, 이름, 필명, 해시 비밀번호, Salt, 가입일 등
+   - `Sessions`: 로그인 세션 토큰 해시 및 만료 시각
 
-1. **배포 → 새 배포**
-2. 유형: **웹 앱**
-3. 실행 사용자: **나**
-4. 액세스 사용자: **모든 사용자**
-5. 배포 후 `/exec`로 끝나는 URL 복사
+---
 
-현재 프론트엔드에 연결된 배포 URL:
+## 3. 웹 앱으로 배포하기
 
-```text
-https://script.google.com/macros/s/AKfycbxhZSuMXfAafZ-lg5wfv87dnaOFTFDjt54V-LVuMizWhClkRj-bc1NDNZ5MMx6HlSv6oA/exec
-```
+1. Apps Script 우측 상단 **배포 → 새 배포**를 클릭합니다.
+2. 좌측 톱니바퀴 아이콘 클릭 후 **웹 앱**을 선택합니다.
+3. 배포 설정:
+   - **설명**: `기록의 온도 블로그 인증 DB v1`
+   - **실행 사용자**: `나 (본인 이메일)`
+   - **액세스 권한**: `모든 사용자 (Anyone)`
+4. **배포**를 클릭합니다.
+5. 배포가 완료되면 `/exec`로 끝나는 **웹 앱 URL**이 발급됩니다. 이 URL을 복사합니다.
 
-## 4. API 요청
+---
 
-브라우저에서 POST할 때는 CORS 사전 요청을 피하기 위해 Content-Type을 `text/plain;charset=utf-8`로 설정한다.
+## 4. 프론트엔드 연동
 
-### 회원가입
-
-```javascript
-fetch(API_URL, {
-  method: 'POST',
-  headers: { 'Content-Type': 'text/plain;charset=utf-8' },
-  body: JSON.stringify({
-    action: 'signup',
-    email: 'user@example.com',
-    name: '홍길동',
-    nickname: 'gildong',
-    password: 'password123'
-  })
-});
-```
-
-### 로그인
+발급받은 웹 앱 URL을 프론트엔드 `js/main.js` 파일의 첫 번째 줄 `AUTH_API_URL` 값에 붙여넣습니다:
 
 ```javascript
-fetch(API_URL, {
-  method: 'POST',
-  headers: { 'Content-Type': 'text/plain;charset=utf-8' },
-  body: JSON.stringify({
-    action: 'login',
-    email: 'user@example.com',
-    password: 'password123'
-  })
-});
+const AUTH_API_URL = "https://script.google.com/macros/s/발급받은_배포_ID/exec";
 ```
 
-### 로그인 사용자 확인
+연동 후 블로그 페이지의 **회원가입(`signup.html`)** 또는 **로그인(`login.html`)**에서 가입/로그인을 진행하면, 스프레드시트의 `Users` 시트에 실시간으로 데이터가 안전하게 암호화되어 기록됩니다.
 
-```javascript
-fetch(API_URL, {
-  method: 'POST',
-  headers: { 'Content-Type': 'text/plain;charset=utf-8' },
-  body: JSON.stringify({ action: 'me', token })
-});
-```
+---
 
-### 로그아웃
+## 5. 보안 특징
 
-```javascript
-fetch(API_URL, {
-  method: 'POST',
-  headers: { 'Content-Type': 'text/plain;charset=utf-8' },
-  body: JSON.stringify({ action: 'logout', token })
-});
-```
-
-## 보안 범위
-
-비밀번호 원문은 저장하지 않으며 salt, 서버 pepper, 반복 SHA-256 해시를 적용한다. 세션 토큰도 원문 대신 SHA-256 해시만 스프레드시트에 저장한다.
-
-이 구성은 개인 학습 및 소규모 프로젝트용이다. 실제 개인정보를 다루는 상용 서비스는 Firebase Authentication 또는 Google Identity Platform 같은 전문 인증 서비스를 사용한다.
+- 비밀번호 원문은 저장되지 않으며, 고유 Salt + 서버측 비밀 Pepper + SHA-256 12,000회 반복 해싱이 적용됩니다.
+- 로그인 세션 토큰 역시 원문이 아닌 SHA-256 해시값만 `Sessions` 시트에 보관됩니다.
+- 5회 이상 로그인 실패 시 일정 시간 로그인이 차단되는 보호 로직이 내장되어 있습니다.

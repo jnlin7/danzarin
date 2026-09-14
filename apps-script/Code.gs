@@ -10,7 +10,7 @@
  */
 
 const AUTH_CONFIG = Object.freeze({
-  spreadsheetId: '1z7rvJsh5ZaNGIwxm2ubj9AT1lH5EF4SvUiuaLhBSz9I',
+  spreadsheetId: '1pZcM4KC0lTnlhhmrSwiTxszZ5TXwHJVBIYzypDWupZE',
   usersSheet: 'Users',
   sessionsSheet: 'Sessions',
   hashIterations: 12000,
@@ -430,7 +430,16 @@ function getSheet_(name) {
 }
 
 function ensureAuthSetup_() {
-  const spreadsheet = SpreadsheetApp.openById(AUTH_CONFIG.spreadsheetId);
+  let spreadsheet;
+  if (AUTH_CONFIG.spreadsheetId) {
+    try {
+      spreadsheet = SpreadsheetApp.openById(AUTH_CONFIG.spreadsheetId);
+    } catch (e) {
+      spreadsheet = SpreadsheetApp.getActiveSpreadsheet();
+    }
+  } else {
+    spreadsheet = SpreadsheetApp.getActiveSpreadsheet();
+  }
 
   createSheetIfMissing_(spreadsheet, AUTH_CONFIG.usersSheet, USER_HEADERS);
   createSheetIfMissing_(spreadsheet, AUTH_CONFIG.sessionsSheet, SESSION_HEADERS);
